@@ -5,8 +5,8 @@ import os
 
 namelist = []
 spec_num = []
-path = r'D:\20231017(仿真卤水)\weighted'#选择原始文件夹
-
+path = r'D:\20240412\nm\raw\raw'#选择原始文件夹
+#D:\20240412\wei\raw\raw
 for name in os.listdir(path):#读.csv的文件
     if name.endswith(".csv"):
         namelist.append(path + '\\' + name)

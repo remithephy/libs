@@ -15,13 +15,61 @@ import pywt
 import file_tool as ft
 from sklearn.cross_decomposition import PLSRegression
 from sklearn.model_selection import cross_val_predict
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score,mean_absolute_error
 from sklearn.model_selection import cross_val_predict
 from sklearn.svm import SVR
 
+def _calculate_vips(model):####PLS
+    t = model.x_scores_
+    w = model.x_weights_
+    q = model.y_loadings_
+    p, h = w.shape
+    vips = np.zeros((p,))#np.zeros()表示初始化0向量
+    s = np.diag(np.matmul(np.matmul(np.matmul(t.T,t),q.T), q)).reshape(h, -1)
+    #np.matmul(a,b)表示两个矩阵相乘;np.diag()输出矩阵中对角线上的元素，若矩阵是一维数组则输出一个以一维数组为对角线的矩阵
+    total_s = np.sum(s)
+    for i in range(p):
+        weight = np.array([ (w[i,j] / np.linalg.norm(w[:,j]))**2 for j in range(h) ])
+        #np.linarg.norm()表示求范数：矩阵整体元素平方和开根号，不保留矩阵二维特性
+        vips[i] = np.sqrt(p*(np.matmul(s.T, weight))/total_s)
+        #s.T表示矩阵的转置
+    return vips
+
+def optimise_pls_cv(X, Y, n_comp):
+    pls = PLSRegression(n_components = n_comp)
+    r2 = []
+    rmse = []
+    mae = []
+    for test in range(len(Y)):
+        X1 = np.delete(X,test,0)
+        Y1 = np.delete(Y,test)
+        pls.fit(X1,Y1)
+        Ypredict = pls.predict(X).flatten()
+        r2.append(1 - ((Y - Ypredict)**2).sum()/((Y - Y.mean())**2).sum())
+        rmse.append(np.sqrt(mean_squared_error(Y, Ypredict)))
+        mae.append(mean_absolute_error(Y, Ypredict))
+    return (Ypredict, r2, rmse, mae)
+
+
+def plot_metrics(X, Y , ylabel, objective):####已知XY绘图找最小/大值
+    with plt.style.context('ggplot'):
+        plt.plot(X, np.array(Y), '-v', color='blue', mfc='blue')
+        if objective=='min':
+            idx = np.argmin(Y)
+        else:
+            idx = np.argmax(Y)
+        plt.plot(X[idx], np.array(Y)[idx], 'P', ms=10, mfc='red')
+
+        plt.xlabel('Pixels')
+        plt.xticks = X
+        plt.ylabel(ylabel)
+
+    plt.show()
+    return X[idx]
+
 ###########Lorentzian函数
 def lorentzian(xc, x0, A, gamma):##################gamma半高宽，A=峰值，X0 中心波长
-    return A * gamma**2 / ((xc - x0)**2 + gamma**2)
+    return A * gamma * 2 / ((xc - x0)**2 + gamma**2)
 
 #################双Lorentzian函数
 def double_lorentzian(xc, x0, A, gamma, x1, A1, gamma1):

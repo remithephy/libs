@@ -1,7 +1,7 @@
 import preprocessing as pp
 import numpy as np
 
-path = r'D:\20231017(仿真卤水)\normalized'
+path = r'D:\20240412\multi_task'
 
 
 '''
